@@ -7,9 +7,26 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
-	kiko::g_memoryTracker.DisplayInfo();
+	kiko::Renderer renderer;
+	renderer.Initialize();
+	renderer.CreateWindow("CSC195", 800, 600);
+
+	while (true)
+	{
+		renderer.SetColor(0, 0, 0, 0);
+		renderer.BeginFrame();
+		// draw
+		for (int i = 0; i < 1000; i++) 
+		{
+			renderer.SetColor(kiko::random(256), kiko::random(256), kiko::random(256), 255);
+			renderer.DrawPoint(kiko::random(renderer.GetWidth()), kiko::random(renderer.GetHeight()));
+		}
+		renderer.EndFrame();
+	}
+
+	/*kiko::g_memoryTracker.DisplayInfo();
 	int* p = new int;
 	kiko::g_memoryTracker.DisplayInfo();
 	delete p;
@@ -17,7 +34,7 @@ int main()
 
 	kiko::Time timer;
 	for (int i = 0; i < 1000000; i++) {}
-	cout << timer.GetElapsedSeconds() << endl;
+	cout << timer.GetElapsedSeconds() << endl;*/
 
 
 
