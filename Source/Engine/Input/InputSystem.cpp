@@ -1,6 +1,8 @@
 #include "InputSystem.h"
 namespace kiko
 {
+	InputSystem g_inputSystem;
+
 	bool InputSystem::Initialize()
 	{
 		int numKeys;

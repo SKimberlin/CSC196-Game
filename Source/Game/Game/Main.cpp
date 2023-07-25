@@ -1,7 +1,17 @@
 #include "Core/Core.h"
 #include "Renderer/Renderer.h"
 #include "Input/InputSystem.h"
-#include "Renderer/Model.h"
+#include "Renderer/ModelManager.h"
+#include "Player.h"
+#include "Enemy.h"
+#include "Renderer/Font.h"
+#include "Renderer/Text.h"
+#include "Audio/AudioSystem.h"
+#include "Framework/Scene.h"
+
+
+#include "SpaceGame.h"
+
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -25,37 +35,32 @@ public:
 
 int main(int argc, char* argv[])
 {
-	constexpr float a = kiko::DegreesToRadians(180);
+	kiko::MemoryTracker::Initialize();
 
 	kiko::seedRandom((unsigned int)time(nullptr));
 	kiko::setFilePath("assets");
 	
-	kiko::Renderer renderer;
-	renderer.Initialize();
-	renderer.CreateWindow("CSC195", 800, 600);
+	kiko::g_renderer.Initialize();
+	kiko::g_renderer.CreateWindow("CSC195", 800, 600);
+	kiko::g_inputSystem.Initialize();
+	kiko::g_audioSystem.Initialize();
 
-	kiko::InputSystem inputSystem;
-	inputSystem.Initialize();
+	unique_ptr<SpaceGame> game = make_unique<SpaceGame>();
+	game->Initialize();
+	
 
-	//std::vector<kiko::vec2> points{ {0,-100}, {100,0}, {0, 100}, {-100,0}, {0,-100} };
-	kiko::Model model;
-	model.Load("ship.txt");
+	// create font / text objects
 
-	vector<Star> stars;
-	for (int i = 0; i < 1000; i++)
-	{
-		kiko::Vector2 pos(kiko::Vector2(kiko::random(renderer.GetWidth()), kiko::random(renderer.GetHeight())));
-		kiko::Vector2 vel(kiko::randomf(0.0f, 100.0f), kiko::randomf(0.0f, 100.0f));
+	//vector<Star> stars;
+	//for (int i = 0; i < 1000; i++)
+	//{
+	//	kiko::Vector2 pos(kiko::Vector2(kiko::random(kiko::g_renderer.GetWidth()), kiko::random(kiko::g_renderer.GetHeight())));
+	//	kiko::Vector2 vel(kiko::randomf(0.0f, 100.0f), kiko::randomf(0.0f, 100.0f));
 
-		stars.push_back(Star(pos, vel));
+	//	stars.push_back(Star(pos, vel));
 
-	}
-
-	kiko::Transform transform{ {400, 300 }, 0, 3 };
-
-	kiko::vec2 position{ 400, 300 };
-	float speed = 200;
-	float turnSpeed = kiko::DegreesToRadians(180);
+	//}
+	
 
 	//main game loop
 	bool quit = false;
@@ -63,64 +68,50 @@ int main(int argc, char* argv[])
 	{
 		kiko::g_time.Tick();
 
-		inputSystem.Update();
-		if (inputSystem.GetKeyDown(SDL_SCANCODE_ESCAPE))
+		kiko::g_inputSystem.Update();
+		if (kiko::g_inputSystem.GetKeyDown(SDL_SCANCODE_ESCAPE))
 		{
 			quit = true;
 		}
-		if (inputSystem.GetMouseButtonDown(0)) 
-		{
-			cout << "\nLeft Mouse Button Pressed!" << endl;
-			
-			cout << "\nMouse X position: " << inputSystem.GetMousePosition().x << "\nMouse Y position: " << inputSystem.GetMousePosition().y << endl;
-		}
-		float rotate = 0;
-		if (inputSystem.GetKeyDown(SDL_SCANCODE_A)) rotate = -1;
-		if (inputSystem.GetKeyDown(SDL_SCANCODE_D)) rotate = 1;
-		transform.rotation += rotate * turnSpeed * kiko::g_time.GetDeltaTime();
+		
+		game->Update(kiko::g_time.GetDeltaTime());
 
-		float thrust = 0;
-		if (inputSystem.GetKeyDown(SDL_SCANCODE_W)) thrust = 1;
+		kiko::g_audioSystem.Update();
+		
 
-		kiko::vec2 forward = kiko::vec2{ 0, -1 }.Rotate(transform.rotation);
-		transform.position += forward * speed * thrust * kiko::g_time.GetDeltaTime();
-		transform.position.x = kiko::Wrap(transform.position.x, renderer.GetWidth());
-		transform.position.y = kiko::Wrap(transform.position.y, renderer.GetHeight());
-
-		renderer.SetColor(0, 0, 0, 0);
-		renderer.BeginFrame();
+		kiko::g_renderer.SetColor(0, 0, 0, 0);
+		kiko::g_renderer.BeginFrame();
 		// draw
-		kiko::Vector2 vel(1.0f, 0.3f);
+		//kiko::Vector2 vel(1.0f, 0.3f);
 
-		for (auto& star : stars)
-		{
-			star.Update();
+		//for (auto& star : stars)
+		//{
+		//	star.Update();
 
-			if (star.m_pos.x > renderer.GetWidth()) 
-			{
-				star.m_pos.x = 0;
-			}
-			if (star.m_pos.y > renderer.GetHeight())
-			{
-				star.m_pos.y = 0;
-			}
-			if (star.m_pos.x < 0)
-			{
-				star.m_pos.x = renderer.GetWidth();
-			}
-			if (star.m_pos.y < 0)
-			{
-				star.m_pos.y = renderer.GetHeight();
-			}
+		//	if (star.m_pos.x > kiko::g_renderer.GetWidth())
+		//	{
+		//		star.m_pos.x = 0;
+		//	}
+		//	if (star.m_pos.y > kiko::g_renderer.GetHeight())
+		//	{
+		//		star.m_pos.y = 0;
+		//	}
+		//	if (star.m_pos.x < 0)
+		//	{
+		//		star.m_pos.x = kiko::g_renderer.GetWidth();
+		//	}
+		//	if (star.m_pos.y < 0)
+		//	{
+		//		star.m_pos.y = kiko::g_renderer.GetHeight();
+		//	}
 
-			
-			renderer.SetColor(kiko::random(256), kiko::random(256), kiko::random(256), 255);
-			renderer.DrawPoint(star.m_pos.x, star.m_pos.y);
-		}
+		//	
+		//	kiko::g_renderer.SetColor(kiko::random(256), kiko::random(256), kiko::random(256), 255);
+		//	kiko::g_renderer.DrawPoint(star.m_pos.x, star.m_pos.y);
+		//}
+		game->Draw(kiko::g_renderer);
 
-		model.Draw(renderer, transform.position, transform.rotation, transform.scale );
-
-		renderer.EndFrame();
+		kiko::g_renderer.EndFrame();
 
 	}
 
